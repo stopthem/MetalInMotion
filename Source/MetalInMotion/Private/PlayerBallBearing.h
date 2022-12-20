@@ -19,7 +19,7 @@ class METALINMOTION_API APlayerBallBearing : public ABallBearing
 public:
 	void SetSpringArm();
 	void SetCamera();
-	
+
 	// Sets default values for this pawn's properties.
 	APlayerBallBearing();
 
@@ -58,11 +58,13 @@ private:
 	// Move the ball bearing with the given force longitudinally on the X axis.
 	void MoveLongitudinally(float value)
 	{
+		InputLongitude = value;
 	}
 
 	// Move the ball bearing with the given force longitudinally on the Y axis.
 	void MoveLaterally(float value)
 	{
+		InputLatitude = value;
 	}
 
 	// Have the ball bearing perform a jump
@@ -79,4 +81,6 @@ private:
 
 	// Timer used to control the dashing of the ball bearing.
 	float DashTimer = 0.0f;
+
+	friend class ABallBearingHUD;
 };

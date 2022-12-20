@@ -7,7 +7,7 @@
 #include "BallBearing.generated.h"
 
 UCLASS()
-class ABallBearing : public APawn
+class METALINMOTION_API ABallBearing : public APawn
 {
 	GENERATED_BODY()
 
@@ -15,20 +15,16 @@ public:
 	// Sets default values for this pawn's properties
 	ABallBearing();
 
+	// The static mesh that represents the ball bearing.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=BallBearing)
 	UStaticMeshComponent* BallMesh;
 
+	// Is the ball bearing attractive to magnets?
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
 	float Magnetized = 1.0f;
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
-public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	// Allow the ball bearing HUD unfettered access to this class.
+	friend class ABallBearingHUD;
 };
