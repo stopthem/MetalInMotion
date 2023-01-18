@@ -10,14 +10,22 @@ ABallBearing::ABallBearing()
 	PrimaryActorTick.bCanEverTick = true;
 
 	BallMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Ball Mesh"));
-
 	BallMesh->SetSimulatePhysics(true);
-
 	SetRootComponent(BallMesh);
 }
 
-// Called to bind functionality to input
-void ABallBearing::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void ABallBearing::BeginPlay()
 {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	BallMesh->SetLinearDamping(0.5f);
+	BallMesh->SetAngularDamping(0.5f);
+
+	InitialLocation = BallMesh->GetComponentLocation();
+}
+
+
+void ABallBearing::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	InContact = false;
 }
