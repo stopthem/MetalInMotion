@@ -41,8 +41,8 @@ protected:
 	virtual void BeginPlay() override;
 
 	/**
-	 * @brief 
-	 * @param DeltaSeconds Control the movement of the ball bearing, called every frame.
+	 * @brief Control the movement of the ball bearing, called every frame.
+	 * @param DeltaSeconds 
 	 */
 	virtual void Tick(float DeltaSeconds) override;
 

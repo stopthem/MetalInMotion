@@ -16,12 +16,13 @@ ABallBearing::ABallBearing()
 
 void ABallBearing::BeginPlay()
 {
+	Super::BeginPlay();
+
 	BallMesh->SetLinearDamping(0.5f);
 	BallMesh->SetAngularDamping(0.5f);
 
 	InitialLocation = BallMesh->GetComponentLocation();
 }
-
 
 void ABallBearing::Tick(float DeltaSeconds)
 {

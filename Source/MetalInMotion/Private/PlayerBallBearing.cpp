@@ -4,6 +4,7 @@
 #include "PlayerBallBearing.h"
 
 #include "BallBearing.h"
+#include "GameFramework/GameModeBase.h"
 
 /**
  * @brief
