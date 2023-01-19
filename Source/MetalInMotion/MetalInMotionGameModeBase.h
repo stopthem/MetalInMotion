@@ -19,4 +19,7 @@ public:
 
 	// Construct the game mode, assigning a debugging HUD class.
 	AMetalInMotionGameModeBase();
+
+private:
+	virtual void BeginDestroy() override;
 };

@@ -16,4 +16,5 @@ void ABallBearingHUD::DrawHUD()
 	AddFloat(L"Dash Timer", ballBearing->DashTimer);
 	AddFloat(L"Input Latitude", ballBearing->InputLatitude);
 	AddFloat(L"Input Longitude", ballBearing->InputLongitude);
+	AddBool(L"In Contact", ballBearing->InContact);
 }

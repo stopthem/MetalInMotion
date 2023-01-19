@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "BallBearing.h"
+#include "FCTweenInstance.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "PlayerBallBearing.generated.h"
@@ -47,6 +48,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
 	float MaximumSpeed = 4.0f;
 
+	// Timer used to control the dashing of the ball bearing.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
+	float DashTimer = 0.0f;
+
 protected:
 	// Control the movement of the ball bearing, called every frame.
 	virtual void Tick(float deltaSeconds) override;
@@ -79,8 +84,9 @@ private:
 	// The current latitude input received from the player.
 	float InputLatitude = 0.0f;
 
-	// Timer used to control the dashing of the ball bearing.
-	float DashTimer = 0.0f;
+	bool bCanDash = true;
+	FCTweenInstance* DashTimerTween = nullptr;
+	float BrakingRatio = 0.0f;
 
 	friend class ABallBearingHUD;
 };

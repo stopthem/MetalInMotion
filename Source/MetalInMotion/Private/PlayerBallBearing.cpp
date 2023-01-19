@@ -2,9 +2,9 @@
 
 
 #include "PlayerBallBearing.h"
-
 #include "BallBearing.h"
-#include "GameFramework/GameModeBase.h"
+#include "FCTween.h"
+#include "Kismet/KismetMathLibrary.h"
 
 /**
  * @brief
@@ -96,6 +96,11 @@ void APlayerBallBearing::SetupPlayerInputComponent(UInputComponent* PlayerInputC
  */
 void APlayerBallBearing::Jump()
 {
+	// Only jump if there is a contact which usually the ground.
+	if (!InContact)return;
+
+	// add impulse upwards for jump
+	BallMesh->AddImpulse(FVector(0.0f, 0.0f, JumpForce * 1000.0f));
 }
 
 /**
@@ -104,6 +109,30 @@ void APlayerBallBearing::Jump()
  */
 void APlayerBallBearing::Dash()
 {
+	// only dash if not dashing
+	if (!bCanDash)return;
+
+	auto velocity = BallMesh->GetComponentVelocity();
+
+	if (velocity.Size() < 1.0f)return;
+
+	velocity.Normalize();
+	velocity.X *= DashForce * 1000.0f;
+
+	BallMesh->AddImpulse(velocity);
+
+	DashTimer = 1.5f;
+
+	DashTimerTween = FCTween::Play(0, 1, [&](const float F)
+		{
+			BrakingRatio = F;
+		}, DashTimer, EFCEase::Linear)
+		->SetOnComplete([&]
+		{
+			bCanDash = true;
+		});
+
+	bCanDash = false;
 }
 
 /**
@@ -115,5 +144,23 @@ void APlayerBallBearing::Tick(float deltaSeconds)
 {
 	Super::Tick(deltaSeconds);
 
-	BallMesh->AddForce(FVector(InputLongitude, InputLatitude, 0.0f) * ControllerForce * BallMesh->GetMass());
+	auto velocity = BallMesh->GetComponentVelocity();
+	auto z = velocity.Z;
+
+	velocity.Z = 0;
+
+	if (velocity.Size() > MaximumSpeed * 100.0f)
+	{
+		velocity.Normalize();
+		velocity *= MaximumSpeed * 100.0f;
+		velocity.Z = z;
+
+		const auto mergedVelocity = UKismetMathLibrary::VLerp(BallMesh->GetPhysicsLinearVelocity(), velocity, BrakingRatio);
+
+		BallMesh->SetPhysicsLinearVelocity(mergedVelocity);
+	}
+	else
+	{
+		BallMesh->AddForce(FVector(InputLongitude, InputLatitude, 0.0f) * ControllerForce * BallMesh->GetMass());
+	}
 }
