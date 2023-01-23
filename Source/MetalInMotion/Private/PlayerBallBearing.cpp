@@ -117,16 +117,15 @@ void APlayerBallBearing::Dash()
 	if (velocity.Size() < 1.0f)return;
 
 	velocity.Normalize();
-	velocity.X *= DashForce * 1000.0f;
+	velocity *= DashForce * 1000.0f;
+	velocity.Z = 0.0f;
 
 	BallMesh->AddImpulse(velocity);
-
-	DashTimer = 1.5f;
 
 	DashTimerTween = FCTween::Play(0, 1, [&](const float F)
 		{
 			BrakingRatio = F;
-		}, DashTimer, EFCEase::Linear)
+		}, DashTimer, DashEase)
 		->SetOnComplete([&]
 		{
 			bCanDash = true;
@@ -145,7 +144,7 @@ void APlayerBallBearing::Tick(float deltaSeconds)
 	Super::Tick(deltaSeconds);
 
 	auto velocity = BallMesh->GetComponentVelocity();
-	auto z = velocity.Z;
+	auto const z = velocity.Z;
 
 	velocity.Z = 0;
 

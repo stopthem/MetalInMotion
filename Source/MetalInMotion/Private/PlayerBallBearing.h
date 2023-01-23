@@ -44,6 +44,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
 	float DashForce = 150.0f;
 
+	//Ease of the dash
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
+	EFCEase DashEase = EFCEase::OutSine;
+
 	// The maximum speed in meters per second
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
 	float MaximumSpeed = 4.0f;

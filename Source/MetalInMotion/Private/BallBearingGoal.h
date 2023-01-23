@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "BallBearing.h"
 #include "Engine/TriggerSphere.h"
+#include "MetalInMotion/MetalInMotionGameModeBase.h"
 #include "BallBearingGoal.generated.h"
 
 /**
@@ -21,7 +22,26 @@ public:
 	 */
 	ABallBearingGoal();
 
+	/**
+	 * @brief Power of the magnetism.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
+	float Magnetism = 7500.0f;
+
+	/**
+	* @brief Does this goal have a ball bearing resting in its center?
+	* @return 
+	*/
+	bool HasBallBearing() const;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
+	float maxDistanceToHasBallBearing = 75.0f;
+
 protected:
+	virtual void BeginPlay() override;
+
+	virtual void Tick(float DeltaSeconds) override;
+
 	/**
 	 * @brief Hide the collision and sprite components in-game.
 	 */
@@ -47,4 +67,7 @@ private:
 	TArray<ABallBearing*> BallBearings;
 
 	ABallBearing* IsBallBearingAndMagnetized(AActor* OtherActor) const;
+
+	UPROPERTY(Transient)
+	AMetalInMotionGameModeBase* MetalInMotionGameModeBase;
 };
