@@ -18,43 +18,43 @@ class METALINMOTION_API APlayerBallBearing : public ABallBearing
 	GENERATED_BODY()
 
 public:
-	void SetSpringArm();
-	void SetCamera();
-
 	// Sets default values for this pawn's properties.
 	APlayerBallBearing();
-
-	// Spring arm for positioning the camera above the ball bearing.
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=BallBearing)
-	USpringArmComponent* SpringArm = nullptr;
-
-	// Camera to view the ball bearing.
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=BallBearing)
-	UCameraComponent* Camera = nullptr;
 
 	// How much force to use to push the ball bearing around.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
 	float ControllerForce = 250.0f;
 
-	// How much force to use to push the ball bearing into the air.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
-	float JumpForce = 50.0f;
-
-	// How much force to use to have the ball bearing dash.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
-	float DashForce = 150.0f;
-
-	//Ease of the dash
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
-	EFCEase DashEase = EFCEase::OutSine;
-
 	// The maximum speed in meters per second
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
 	float MaximumSpeed = 4.0f;
 
-	// Timer used to control the dashing of the ball bearing.
+	// How much force to use to push the ball bearing into the air
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
+	float JumpForce = 50.0f;
+
+	// How much angular impulse power will be applied towards velocity when ball is not dashing and is in air
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
+	float InAirAngularImpulsePower = 1750.0f;
+
+	// How much force to use to have the ball bearing dash
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|Dash")
+	float DashForce = 150.0f;
+
+	// How much of a angular impulse will be applied when dashed in air
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|Dash")
+	float DashAngularImpulsePower = 10000000.0f;
+
+	//Ease of the dash
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|Dash")
+	EFCEase DashEase = EFCEase::OutSine;
+
+	// Timer used to control the dashing of the ball bearing
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|Dash")
 	float DashTimer = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|Dash")
+	UParticleSystem* DashVfx;
 
 protected:
 	// Control the movement of the ball bearing, called every frame.
@@ -76,6 +76,11 @@ private:
 		InputLatitude = value;
 	}
 
+	float GetMaximumSpeed() const
+	{
+		return MaximumSpeed * 100.0f;
+	}
+
 	// Have the ball bearing perform a jump
 	void Jump();
 
@@ -87,6 +92,28 @@ private:
 
 	// The current latitude input received from the player.
 	float InputLatitude = 0.0f;
+
+	// Get input vector based on InputLongitude and InputLatitude with 0 z.
+	FVector GetInputVector() const
+	{
+		auto normalizedInputVector = FVector(InputLongitude, InputLatitude, 0.0f);
+		normalizedInputVector.Normalize();
+		return normalizedInputVector;
+	}
+
+	// Get ball mesh velocity without upwards axis
+	FVector GetVelocityWithoutUpwards(bool normalize = false) const
+	{
+		auto velocity = BallMesh->GetComponentVelocity();
+		velocity.Z = 0;
+
+		if (normalize)
+		{
+			velocity.Normalize();
+		}
+		
+		return velocity;
+	}
 
 	bool bCanDash = true;
 	FCTweenInstance* DashTimerTween = nullptr;

@@ -23,7 +23,6 @@ public:
 	UStaticMeshComponent* BallMesh = nullptr;
 
 	// Is the ball bearing attractive to magnets?
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
 	bool Magnetized = true;
 
 	UFUNCTION(BlueprintCallable, Category="Ball Bearing")

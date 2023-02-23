@@ -33,6 +33,8 @@ void AMetalInMotionGameModeBase::CheckBallBearingGoals()
 {
 	// HasBallBearingGoalCount = hasBallBearing ? HasBallBearingGoalCount + 1 : HasBallBearingGoalCount - 1;
 
+	if (GameFinishedTimer.IsValid())return;
+
 	if (BallBearingGoals.IsEmpty())return;
 
 	if (BallBearingGoals.FindByPredicate([](const ABallBearingGoal* BallBearingGoal)

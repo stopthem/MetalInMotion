@@ -14,7 +14,7 @@ ABallBearingGoal::ABallBearingGoal()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	SetActorHiddenInGame(false);
+	AActor::SetActorHiddenInGame(false);
 }
 
 /**
@@ -51,7 +51,7 @@ void ABallBearingGoal::Tick(float DeltaSeconds)
 
 	// If we're cheating then give our goals extra magnetism.
 
-	const auto extraForce = IConsoleManager::Get().FindConsoleVariable(TEXT("OurGame.ExtraMagnetism"));
+	const auto extraForce = IConsoleManager::Get().FindConsoleVariable(TEXT("MetalInMotion.ExtraMagnetism"));
 	if (extraForce && extraForce->GetInt() != 0)
 	{
 		magnetism *= 4.0f;
@@ -125,7 +125,6 @@ ABallBearing* ABallBearingGoal::IsBallBearingAndMagnetized(AActor* OtherActor) c
 bool ABallBearingGoal::HasBallBearing() const
 {
 	const auto ourLocation = GetActorLocation();
-
 	for (const auto ballBearing : BallBearings)
 	{
 		const auto difference = ourLocation - ballBearing->GetActorLocation();
