@@ -34,8 +34,17 @@ public:
 	*/
 	bool HasBallBearing() const;
 
+	// overlapped ball bearing distance needs to be less than this to has ball bearing
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
 	float maxDistanceToHasBallBearing = 75.0f;
+
+	// The color of the fire when has ball bearing is true
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|FireVfx")
+	FLinearColor HasBallBearingFireColor;
+
+	// the material index of fire
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|FireVfx")
+	int32 FireVfxColorChangeMatIndex;
 
 protected:
 	virtual void BeginPlay() override;
@@ -63,11 +72,24 @@ private:
 	/**
 	 * @brief A list of proximate ball bearings.
 	 */
-	UPROPERTY(Transient)
+	UPROPERTY()
 	TArray<ABallBearing*> BallBearings;
 
+	// is the given actor ball bearing and magnetized
 	ABallBearing* IsBallBearingAndMagnetized(AActor* OtherActor) const;
 
-	UPROPERTY(Transient)
+	// the game mode
+	UPROPERTY()
 	AMetalInMotionGameModeBase* MetalInMotionGameModeBase;
+
+	// the fire vfx
+	UPROPERTY()
+	UParticleSystemComponent* FireVfxComponent;
+
+	// the fire material in fire vfx
+	UPROPERTY()
+	UMaterialInterface* FireVfxFireMat;
+
+	// the starting fire color
+	FLinearColor* FireVfxFireStartColor;
 };

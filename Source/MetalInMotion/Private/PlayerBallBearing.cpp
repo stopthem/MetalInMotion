@@ -3,10 +3,8 @@
 
 #include "PlayerBallBearing.h"
 #include "BallBearing.h"
-#include "FCTween.h"
-#include "GameFramework/PawnMovementComponent.h"
+#include "Helpers/InterpolationLibrary.h"
 #include "Kismet/GameplayStatics.h"
-#include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 /**
@@ -89,42 +87,53 @@ void APlayerBallBearing::Dash()
 
 	bCanDash = false;
 
-	auto dashDirection = GetInputVector();
-	// dashDirection.Normalize();
+	// change ball bearing state so velocity does not get clamped at max speed
+	ChangeBallBearingState(Dashing);
 
+	auto dashDirection = GetInputVector();
+
+	// if there is no input
 	if (dashDirection.Size() == 0)
 	{
-		auto noInputDashDirection = BallMesh->GetPhysicsLinearVelocity();
+		auto noInputDashDirection = GetVelocityWithoutUpwards();
 
+		// if ball is barely or not moving in X-Y
 		if (noInputDashDirection.Size() <= 1.0f)
 		{
+			// if there is no input and ball is barely moving, use forward of the actor
 			noInputDashDirection = GetActorForwardVector();
 		}
 		else
 		{
 			noInputDashDirection.Normalize();
-			noInputDashDirection.Z = 0;
 		}
 
 		dashDirection = noInputDashDirection;
 	}
+	dashDirection.Z = 0;
 
+	// zero out normal velocity because we dont want dash velocity effected by normal velocity
+	BallMesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
 	BallMesh->AddImpulse(dashDirection * DashForce * 1000.0f);
 
 	// first zero out angular velocity and add a angular impulse towards the way we are dashing
 	BallMesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 	BallMesh->AddAngularImpulseInDegrees(FVector(-dashDirection.Y, dashDirection.X, 0.0f) * DashAngularImpulsePower);
 
-	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DashVfx, GetActorLocation(), GetActorRotation());
+	// spawn the dash vfx at actor position
+	DashVfxComponent = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DashVfx, GetActorLocation(), FRotator::ZeroRotator);
 
-	DashTimerTween = FCTween::Play(0, 1, [&](const float F)
-		{
-			BrakingRatio = F;
-		}, DashTimer, DashEase)
-		->SetOnComplete([&]
-		{
-			bCanDash = true;
-		});
+	// set a timer for dash duration
+	GetWorldTimerManager().SetTimer(DashTimer, FTimerDelegate::CreateLambda([&]
+	{
+		ChangeBallBearingState(InContact ? Grounded : InAir, true);
+	}), DashTime, false);
+
+	// set a timer for dash cooldown
+	GetWorldTimerManager().SetTimer(DashCooldownTimer, FTimerDelegate::CreateLambda([&]
+	{
+		bCanDash = true;
+	}), DashCoolDown, false);
 }
 
 /**
@@ -134,20 +143,24 @@ void APlayerBallBearing::Dash()
  */
 void APlayerBallBearing::Tick(float deltaSeconds)
 {
-	if (GetVelocityWithoutUpwards().Size() > GetMaximumSpeed())
-	{
-		auto velocity = BallMesh->GetComponentVelocity();
-		velocity.Normalize();
-		velocity *= GetMaximumSpeed();
-
-		const auto mergedVelocity = UKismetMathLibrary::VLerp(BallMesh->GetComponentVelocity(), velocity, BrakingRatio);
-
-		BallMesh->SetPhysicsLinearVelocity(mergedVelocity);
-	}
-	else
+	if (CurrentPlayerBallBearingState != Dashing)
 	{
 		BallMesh->AddForce(GetInputVector() * ControllerForce * BallMesh->GetMass());
+
+		if (GetVelocityWithoutUpwards().Size() > GetMaximumSpeed())
+		{
+			const auto oldVelocity = BallMesh->GetComponentVelocity();
+			auto velocity = oldVelocity;
+			velocity.Normalize();
+			velocity *= GetMaximumSpeed();
+			// doing this because ball bearing loses jumping force if jumped after dashing.
+			velocity.Z = oldVelocity.Z;
+
+			const auto mergedVelocity = UInterpolationLibrary::VectorSpringInterpCD(BallMesh->GetComponentVelocity(), velocity, *DashVelocityPtr, GetWorld()->GetDeltaSeconds(), ClampToMaxSpeedInterpSpeed);
+			BallMesh->SetPhysicsLinearVelocity(mergedVelocity);
+		}
 	}
 
+	if (!InContact)ChangeBallBearingState(InAir);
 	Super::Tick(deltaSeconds);
 }

@@ -13,9 +13,9 @@ void ABallBearingHUD::DrawHUD()
 	if (!ballBearing)return;
 
 	AddFloat(L"Speed", ballBearing->GetVelocity().Size() / 100.0f);
-	AddFloat(L"Dash Timer", ballBearing->DashTimer);
 	AddFloat(L"Input Latitude", ballBearing->InputLatitude);
 	AddFloat(L"Input Longitude", ballBearing->InputLongitude);
 	AddBool(L"In Contact", ballBearing->InContact);
 	AddBool(L"Can Dash", ballBearing->bCanDash);
+	AddText(L"Player Ball Bearing State", FText::FromString(UEnum::GetValueAsName(ballBearing->CurrentPlayerBallBearingState).ToString()));
 }

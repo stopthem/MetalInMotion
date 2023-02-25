@@ -56,7 +56,7 @@ protected:
 
 		InContact = true;
 	}
-
+	
 	/**
 	 * @brief Is the ball bearing in contact with any other geometry?
 	 */

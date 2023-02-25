@@ -4,13 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "BallBearing.h"
-#include "FCTweenInstance.h"
-#include "Camera/CameraComponent.h"
-#include "GameFramework/SpringArmComponent.h"
 #include "PlayerBallBearing.generated.h"
 
+UENUM()
+enum EPlayerBallBearingState
+{
+	InAir,
+	Dashing,
+	Grounded
+};
+
 /**
- * 
+ * The ball bearing that player controls
  */
 UCLASS()
 class METALINMOTION_API APlayerBallBearing : public ABallBearing
@@ -29,6 +34,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
 	float MaximumSpeed = 4.0f;
 
+	// The speed of damping velocity back to at least maximum speed's speed
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
+	float ClampToMaxSpeedInterpSpeed = 5.f;
+
 	// How much force to use to push the ball bearing into the air
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
 	float JumpForce = 50.0f;
@@ -39,20 +48,21 @@ public:
 
 	// How much force to use to have the ball bearing dash
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|Dash")
+	float DashTime = 0.1f;
+
+	// How much force to use to have the ball bearing dash
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|Dash")
 	float DashForce = 150.0f;
 
 	// How much of a angular impulse will be applied when dashed in air
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|Dash")
 	float DashAngularImpulsePower = 10000000.0f;
 
-	//Ease of the dash
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|Dash")
-	EFCEase DashEase = EFCEase::OutSine;
-
 	// Timer used to control the dashing of the ball bearing
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|Dash")
-	float DashTimer = 0.0f;
+	float DashCoolDown = 0.0f;
 
+	// The vfx that plays when dashed
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|Dash")
 	UParticleSystem* DashVfx;
 
@@ -63,7 +73,30 @@ protected:
 	// Called to bind functionality to input.
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
+	virtual void NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit) override
+	{
+		Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
+
+		ChangeBallBearingState(Grounded);
+	}
+
 private:
+	// Player ball bearing state
+	EPlayerBallBearingState CurrentPlayerBallBearingState = InAir;
+
+	// Change player ball bearing state if not dashing.
+	void ChangeBallBearingState(const EPlayerBallBearingState WantedPlayerBallBearingState, const bool overrideDashing = false)
+	{
+		if (CurrentPlayerBallBearingState == Dashing && !overrideDashing)return;
+
+		CurrentPlayerBallBearingState = WantedPlayerBallBearingState;
+	}
+
+	virtual void NotifyActorEndOverlap(AActor* OtherActor) override
+	{
+		UE_LOG(LogTemp, Warning, TEXT("collision exit"));
+	}
+
 	// Move the ball bearing with the given force longitudinally on the X axis.
 	void MoveLongitudinally(float value)
 	{
@@ -87,13 +120,26 @@ private:
 	// Have the ball bearing perform a dash
 	void Dash();
 
-	// The current longitude input received from the player.
+	// Player can dash if true
+	bool bCanDash = true;
+
+	// dash duration timer and dash cooldown timer
+	FTimerHandle DashTimer, DashCooldownTimer;
+
+	// for critically damped interpolation
+	FVector DashVelocity = FVector::ZeroVector;
+	FVector* DashVelocityPtr = &DashVelocity;
+
+	UPROPERTY(VisibleAnywhere)
+	UParticleSystemComponent* DashVfxComponent = nullptr;
+
+	// The current longitude input received from the player
 	float InputLongitude = 0.0f;
 
-	// The current latitude input received from the player.
+	// The current latitude input received from the player
 	float InputLatitude = 0.0f;
 
-	// Get input vector based on InputLongitude and InputLatitude with 0 z.
+	// Get input vector based on InputLongitude and InputLatitude with 0 z
 	FVector GetInputVector() const
 	{
 		auto normalizedInputVector = FVector(InputLongitude, InputLatitude, 0.0f);
@@ -111,13 +157,9 @@ private:
 		{
 			velocity.Normalize();
 		}
-		
+
 		return velocity;
 	}
-
-	bool bCanDash = true;
-	FCTweenInstance* DashTimerTween = nullptr;
-	float BrakingRatio = 0.0f;
 
 	friend class ABallBearingHUD;
 };
