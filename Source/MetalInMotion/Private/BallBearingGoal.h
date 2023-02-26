@@ -3,13 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BallBearing.h"
 #include "Engine/TriggerSphere.h"
-#include "MetalInMotion/MetalInMotionGameModeBase.h"
-#include "Particles/ParticleSystemComponent.h"
 #include "BallBearingGoal.generated.h"
 
-class UParticleEmitter;
+class ABallBearing;
+class UParticleSystemComponent;
+
 /**
  * A goal for ball bearings in Metal In Motion
  */
@@ -64,21 +63,6 @@ private:
 
 	// is the given actor ball bearing and magnetized
 	ABallBearing* IsBallBearingAndMagnetized(AActor* OtherActor) const;
-
-	// the game mode
-	UPROPERTY()
-	AMetalInMotionGameModeBase* MetalInMotionGameModeBase;
-
-	// the fire vfx
-	UPROPERTY()
-	UParticleSystemComponent* FireVfxComponent;
-
-	// the fire material in fire vfx
-	UPROPERTY()
-	UMaterialInterface* FireVfxFireMat;
-
-	// the starting fire color
-	FLinearColor* FireVfxFireStartColor;
 
 	// If has ball bearing, activate blueish fire if not activate normal.
 	void HandleHasBallBearingVfxS(bool hasBallBearing) const;

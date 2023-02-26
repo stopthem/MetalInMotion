@@ -22,6 +22,13 @@ void AMetalInMotionGameModeBase::BeginPlay()
 	UGameplayStatics::PlaySound2D(AActor::GetWorld(), BackgroundMusic);
 }
 
+void AMetalInMotionGameModeBase::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	CheckBallBearingGoals();
+}
+
 void AMetalInMotionGameModeBase::BeginDestroy()
 {
 	Super::BeginDestroy();
@@ -31,8 +38,6 @@ void AMetalInMotionGameModeBase::BeginDestroy()
 
 void AMetalInMotionGameModeBase::CheckBallBearingGoals()
 {
-	// HasBallBearingGoalCount = hasBallBearing ? HasBallBearingGoalCount + 1 : HasBallBearingGoalCount - 1;
-
 	if (GameFinishedTimer.IsValid())return;
 
 	if (BallBearingGoals.IsEmpty())return;

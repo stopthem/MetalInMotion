@@ -8,6 +8,7 @@
 #include "Components/ShapeComponent.h"
 #include "Components/SphereComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "MetalInMotion/MetalInMotionGameModeBase.h"
 #include "Particles/ParticleSystemComponent.h"
 
 // Constructor for a goal for ball bearings.
@@ -25,18 +26,17 @@ void ABallBearingGoal::PostInitializeComponents()
 
 	GetCollisionComponent()->SetHiddenInGame(true);
 
+// this causes standalone game crash and i dont have even a slightest clue.
 #if WITH_EDITORONLY_DATA
 	GetSpriteComponent()->SetHiddenInGame(true);
 #endif
 
-	MetalInMotionGameModeBase = Cast<AMetalInMotionGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()));
+	Cast<AMetalInMotionGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->AddToBallBearingGoals(this);
 }
 
 void ABallBearingGoal::BeginPlay()
 {
 	Super::BeginPlay();
-
-	MetalInMotionGameModeBase->AddToBallBearingGoals(this);
 }
 
 
@@ -69,9 +69,6 @@ void ABallBearingGoal::Tick(float DeltaSeconds)
 
 		ballBearing->BallMesh->AddForce(force);
 	}
-
-	if (!HasBallBearing())return;
-	MetalInMotionGameModeBase->CheckBallBearingGoals();
 }
 
 // Add a ball bearing to the list of proximate bearings we're maintaining.
