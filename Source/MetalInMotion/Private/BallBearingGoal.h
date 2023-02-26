@@ -6,8 +6,10 @@
 #include "BallBearing.h"
 #include "Engine/TriggerSphere.h"
 #include "MetalInMotion/MetalInMotionGameModeBase.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "BallBearingGoal.generated.h"
 
+class UParticleEmitter;
 /**
  * A goal for ball bearings in Metal In Motion
  */
@@ -17,61 +19,46 @@ class ABallBearingGoal : public ATriggerSphere
 	GENERATED_BODY()
 
 public:
-	/**
-	 * @brief Constructor for a goal for ball bearings.
-	 */
+	// Constructor for a goal for ball bearings.
 	ABallBearingGoal();
 
-	/**
-	 * @brief Power of the magnetism.
-	 */
+	// Power of the magnetism.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
 	float Magnetism = 7500.0f;
 
-	/**
-	* @brief Does this goal have a ball bearing resting in its center?
-	* @return 
-	*/
+	// Does this goal have a ball bearing resting in its center?
 	bool HasBallBearing() const;
 
 	// overlapped ball bearing distance needs to be less than this to has ball bearing
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
-	float maxDistanceToHasBallBearing = 75.0f;
+	float MaxDistanceToHasBallBearing = 75.0f;
 
-	// The color of the fire when has ball bearing is true
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|FireVfx")
-	FLinearColor HasBallBearingFireColor;
+	// Normal fire vfx, plays when goal doesnt have ball bearing
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="BallBearing|FireVfx")
+	UParticleSystemComponent* NormalFireVfx;
 
-	// the material index of fire
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|FireVfx")
-	int32 FireVfxColorChangeMatIndex;
+	// Blueish fire vfx, plays when has ball bearing returns true
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="BallBearing|FireVfx")
+	UParticleSystemComponent* HasBallBearingFireVfx;
 
 protected:
+	// Add this ball bearing goal to game mode ball bearing goals
 	virtual void BeginPlay() override;
 
+	// Apply magnetism to nearby non player ball bearings and check goals for game end
 	virtual void Tick(float DeltaSeconds) override;
 
-	/**
-	 * @brief Hide the collision and sprite components in-game.
-	 */
+	// Hide the collision and sprite components in-game.
 	virtual void PostInitializeComponents() override;
 
-	/**
-	 * @brief Add a ball bearing to the list of proximate bearings we're maintaining.
-	 * @param OtherActor 
-	 */
+	// Add a ball bearing to the list of proximate bearings we're maintaining.
 	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 
-	/**
-	 * @brief Remove a ball bearing from the list of proximate bearings we're maintaining. 
-	 * @param OtherActor 
-	 */
+	// Remove a ball bearing from the list of proximate bearings we're maintaining. 
 	virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
 
 private:
-	/**
-	 * @brief A list of proximate ball bearings.
-	 */
+	// A list of proximate ball bearings.
 	UPROPERTY()
 	TArray<ABallBearing*> BallBearings;
 
@@ -92,4 +79,7 @@ private:
 
 	// the starting fire color
 	FLinearColor* FireVfxFireStartColor;
+
+	// If has ball bearing, activate blueish fire if not activate normal.
+	void HandleHasBallBearingVfxS(bool hasBallBearing) const;
 };

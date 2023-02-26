@@ -2,15 +2,15 @@
 
 
 #include "BallBearingGoal.h"
+
+#include "PlayerBallBearing.h"
 #include "Components/BillboardComponent.h"
 #include "Components/ShapeComponent.h"
 #include "Components/SphereComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
 
-/**
- * @brief Constructor for a goal for ball bearings.
- */
+// Constructor for a goal for ball bearings.
 ABallBearingGoal::ABallBearingGoal()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -18,9 +18,7 @@ ABallBearingGoal::ABallBearingGoal()
 	AActor::SetActorHiddenInGame(false);
 }
 
-/**
- * @brief Hide the collision and sprite components in-game
- */
+// Hide the collision and sprite components in-game
 void ABallBearingGoal::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
@@ -32,10 +30,6 @@ void ABallBearingGoal::PostInitializeComponents()
 #endif
 
 	MetalInMotionGameModeBase = Cast<AMetalInMotionGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()));
-
-	// FireVfxComponent = FindComponentByClass<UParticleSystemComponent>();
-	// FireVfxFireMat = UMaterialInstanceDynamic::Create(FireVfxComponent->GetMaterial(FireVfxColorChangeMatIndex),);
-	// FireVfxFireMat->GetVectorParameterValue(FHashedMaterialParameterInfo("BaseColor"), *FireVfxFireStartColor);
 }
 
 void ABallBearingGoal::BeginPlay()
@@ -80,10 +74,7 @@ void ABallBearingGoal::Tick(float DeltaSeconds)
 	MetalInMotionGameModeBase->CheckBallBearingGoals();
 }
 
-/**
- * @brief Add a ball bearing to the list of proximate bearings we're maintaining.
- * @param OtherActor 
- */
+// Add a ball bearing to the list of proximate bearings we're maintaining.
 void ABallBearingGoal::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorBeginOverlap(OtherActor);
@@ -98,10 +89,7 @@ void ABallBearingGoal::NotifyActorBeginOverlap(AActor* OtherActor)
 	BallBearings.AddUnique(enteringBallBearing);
 }
 
-/**
-	 * @brief Remove a ball bearing from the list of proximate bearings we're maintaining. 
-	 * @param OtherActor 
-	 */
+// Remove a ball bearing from the list of proximate bearings we're maintaining. 
 void ABallBearingGoal::NotifyActorEndOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorEndOverlap(OtherActor);
@@ -116,10 +104,10 @@ void ABallBearingGoal::NotifyActorEndOverlap(AActor* OtherActor)
 	BallBearings.Remove(exitingBallBearing);
 }
 
-
+// is the given actor ball bearing and magnetized
 ABallBearing* ABallBearingGoal::IsBallBearingAndMagnetized(AActor* OtherActor) const
 {
-	if (const auto ballBearing = Cast<ABallBearing>(OtherActor); ballBearing && ballBearing->Magnetized)
+	if (const auto ballBearing = Cast<ABallBearing>(OtherActor); ballBearing && ballBearing->Magnetized && typeid(ballBearing) != typeid(APlayerBallBearing))
 	{
 		return ballBearing;
 	}
@@ -127,18 +115,52 @@ ABallBearing* ABallBearingGoal::IsBallBearingAndMagnetized(AActor* OtherActor) c
 	return nullptr;
 }
 
+// If has ball bearing, activate blueish fire if not activate normal.
+void ABallBearingGoal::HandleHasBallBearingVfxS(bool hasBallBearing) const
+{
+	if (!NormalFireVfx || !HasBallBearingFireVfx)return;
+
+	// only play the particle if not playing
+	auto PlayPsIfNotPlaying = [](UParticleSystemComponent& particle)
+	{
+		if (particle.GetNumActiveParticles() > 0)
+		{
+			return;
+		}
+
+		particle.Activate();
+	};
+
+	if (hasBallBearing)
+	{
+		NormalFireVfx->DeactivateImmediate();
+		PlayPsIfNotPlaying(*HasBallBearingFireVfx);
+		HasBallBearingFireVfx->Activate();
+	}
+	else
+	{
+		HasBallBearingFireVfx->DeactivateImmediate();
+		PlayPsIfNotPlaying(*NormalFireVfx);
+	}
+}
+
+// Does this goal have a ball bearing resting in its center?
 bool ABallBearingGoal::HasBallBearing() const
 {
+	auto hasBallBearing = false;
+
 	const auto ourLocation = GetActorLocation();
 	for (const auto ballBearing : BallBearings)
 	{
 		const auto difference = ourLocation - ballBearing->GetActorLocation();
 		const auto distance = difference.Size();
 
-		if (distance < maxDistanceToHasBallBearing)
+		if (distance < MaxDistanceToHasBallBearing)
 		{
-			return true;
+			hasBallBearing = true;
 		}
 	}
-	return false;
+
+	HandleHasBallBearingVfxS(hasBallBearing);
+	return hasBallBearing;
 }
