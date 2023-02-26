@@ -6,7 +6,7 @@
 IMPLEMENT_PRIMARY_GAME_MODULE(FDefaultGameModuleImpl, MetalInMotion, "MetalInMotion");
 
 static TAutoConsoleVariable CVarExtraMagnetism(
-	TEXT("OurGame.ExtraMagnetism"),
+	TEXT("MetalInMotion.ExtraMagnetism"),
 	0,
 	TEXT("Defines whether we should cheat in getting our bearings into their goals. \n")
 	TEXT(" 0: no extra magnetism \n")

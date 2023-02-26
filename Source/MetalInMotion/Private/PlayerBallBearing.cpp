@@ -3,6 +3,7 @@
 
 #include "PlayerBallBearing.h"
 #include "BallBearing.h"
+#include "InputActionValue.h"
 #include "Helpers/InterpolationLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -16,57 +17,14 @@ APlayerBallBearing::APlayerBallBearing()
 	Magnetized = false;
 }
 
-/**
- * @brief
- * Establish the default pawn input bindings for a player ball bearing.
- */
-static void InitializeDefaultPawnInputBindings()
+// Move the ball bearing with the incoming input value
+void APlayerBallBearing::Move(const FInputActionValue& InputActionValue)
 {
-	if (static bool bBindingsAdded = false; !bBindingsAdded)
-	{
-		bBindingsAdded = true;
-
-		UPlayerInput::AddEngineDefinedAxisMapping(FInputAxisKeyMapping("BallBearing_MoveLongitudinally", EKeys::W, 1.f));
-		UPlayerInput::AddEngineDefinedAxisMapping(FInputAxisKeyMapping("BallBearing_MoveLongitudinally", EKeys::S, -1.f));
-		UPlayerInput::AddEngineDefinedAxisMapping(FInputAxisKeyMapping("BallBearing_MoveLongitudinally", EKeys::Up, 1.f));
-		UPlayerInput::AddEngineDefinedAxisMapping(FInputAxisKeyMapping("BallBearing_MoveLongitudinally", EKeys::Down, -1.f));
-		UPlayerInput::AddEngineDefinedAxisMapping(FInputAxisKeyMapping("BallBearing_MoveLongitudinally", EKeys::Gamepad_LeftY, 1.f));
-
-		UPlayerInput::AddEngineDefinedAxisMapping(FInputAxisKeyMapping("BallBearing_MoveLaterally", EKeys::A, -1.f));
-		UPlayerInput::AddEngineDefinedAxisMapping(FInputAxisKeyMapping("BallBearing_MoveLaterally", EKeys::D, 1.f));
-		UPlayerInput::AddEngineDefinedAxisMapping(FInputAxisKeyMapping("BallBearing_MoveLaterally", EKeys::Left, -1.f));
-		UPlayerInput::AddEngineDefinedAxisMapping(FInputAxisKeyMapping("BallBearing_MoveLaterally", EKeys::Right, 1.f));
-		UPlayerInput::AddEngineDefinedAxisMapping(FInputAxisKeyMapping("BallBearing_MoveLaterally", EKeys::Gamepad_LeftX, 1.f));
-
-		UPlayerInput::AddEngineDefinedActionMapping(FInputActionKeyMapping("BallBearing_Jump", EKeys::SpaceBar));
-		UPlayerInput::AddEngineDefinedActionMapping(FInputActionKeyMapping("BallBearing_Dash", EKeys::LeftShift));
-	}
+	InputVector = InputActionValue.Get<FVector>();
+	BallMesh->AddForce(InputVector * ControllerForce * BallMesh->GetMass());
 }
 
-/**
- * @brief
- * Called to bind functionality to input.
- * @param PlayerInputComponent 
- */
-void APlayerBallBearing::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	check(PlayerInputComponent);
-
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	InitializeDefaultPawnInputBindings();
-
-	PlayerInputComponent->BindAxis("BallBearing_MoveLongitudinally", this, &APlayerBallBearing::MoveLongitudinally);
-	PlayerInputComponent->BindAxis("BallBearing_MoveLaterally", this, &APlayerBallBearing::MoveLaterally);
-
-	PlayerInputComponent->BindAction("BallBearing_Jump", IE_Pressed, this, &APlayerBallBearing::Jump);
-	PlayerInputComponent->BindAction("BallBearing_Dash", IE_Pressed, this, &APlayerBallBearing::Dash);
-}
-
-/**
- * @brief
- * Have the ball bearing perform a jump.
- */
+// Have the ball bearing perform a jump.
 void APlayerBallBearing::Jump()
 {
 	// Only jump if there is a contact which usually the ground.
@@ -76,10 +34,7 @@ void APlayerBallBearing::Jump()
 	BallMesh->AddImpulse(FVector(0.0f, 0.0f, JumpForce * 1000.0f));
 }
 
-/**
- * @brief
- * Have the ball bearing perform a dash.
- */
+// Have the ball bearing perform a dash.
 void APlayerBallBearing::Dash()
 {
 	// only dash if not dashing
@@ -90,7 +45,7 @@ void APlayerBallBearing::Dash()
 	// change ball bearing state so velocity does not get clamped at max speed
 	ChangeBallBearingState(Dashing);
 
-	auto dashDirection = GetInputVector();
+	auto dashDirection = InputVector;
 
 	// if there is no input
 	if (dashDirection.Size() == 0)
@@ -136,16 +91,12 @@ void APlayerBallBearing::Dash()
 	}), DashCoolDown, false);
 }
 
-/**
- * @brief
- * Control the movement of the ball bearing, called every frame.
- * @param deltaSeconds 
- */
+// Control the movement of the ball bearing, called every frame.
 void APlayerBallBearing::Tick(float deltaSeconds)
 {
 	if (CurrentPlayerBallBearingState != Dashing)
 	{
-		BallMesh->AddForce(GetInputVector() * ControllerForce * BallMesh->GetMass());
+		BallMesh->AddForce(InputVector * ControllerForce * BallMesh->GetMass());
 
 		if (GetVelocityWithoutUpwards().Size() > GetMaximumSpeed())
 		{

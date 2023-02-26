@@ -4,8 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "BallBearing.h"
+#include "InputActionValue.h"
 #include "PlayerBallBearing.generated.h"
 
+struct FInputActionValue;
 UENUM()
 enum EPlayerBallBearingState
 {
@@ -66,13 +68,20 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|Dash")
 	UParticleSystem* DashVfx;
 
+	// Have the ball bearing perform a jump
+	void Jump();
+
+	// Have the ball bearing perform a dash
+	void Dash();
+
+	// Move the ball bearing with the incoming input value
+	void Move(const FInputActionValue& InputActionValue);
+
 protected:
 	// Control the movement of the ball bearing, called every frame.
 	virtual void Tick(float deltaSeconds) override;
 
-	// Called to bind functionality to input.
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-
+	// Change ball bearing state when grounded
 	virtual void NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit) override
 	{
 		Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
@@ -92,33 +101,13 @@ private:
 		CurrentPlayerBallBearingState = WantedPlayerBallBearingState;
 	}
 
-	virtual void NotifyActorEndOverlap(AActor* OtherActor) override
-	{
-		UE_LOG(LogTemp, Warning, TEXT("collision exit"));
-	}
-
-	// Move the ball bearing with the given force longitudinally on the X axis.
-	void MoveLongitudinally(float value)
-	{
-		InputLongitude = value;
-	}
-
-	// Move the ball bearing with the given force longitudinally on the Y axis.
-	void MoveLaterally(float value)
-	{
-		InputLatitude = value;
-	}
+	// the input vector. changed when a input has been registered
+	FVector InputVector = FVector::ZeroVector;
 
 	float GetMaximumSpeed() const
 	{
 		return MaximumSpeed * 100.0f;
 	}
-
-	// Have the ball bearing perform a jump
-	void Jump();
-
-	// Have the ball bearing perform a dash
-	void Dash();
 
 	// Player can dash if true
 	bool bCanDash = true;
@@ -132,20 +121,6 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	UParticleSystemComponent* DashVfxComponent = nullptr;
-
-	// The current longitude input received from the player
-	float InputLongitude = 0.0f;
-
-	// The current latitude input received from the player
-	float InputLatitude = 0.0f;
-
-	// Get input vector based on InputLongitude and InputLatitude with 0 z
-	FVector GetInputVector() const
-	{
-		auto normalizedInputVector = FVector(InputLongitude, InputLatitude, 0.0f);
-		normalizedInputVector.Normalize();
-		return normalizedInputVector;
-	}
 
 	// Get ball mesh velocity without upwards axis
 	FVector GetVelocityWithoutUpwards(bool normalize = false) const

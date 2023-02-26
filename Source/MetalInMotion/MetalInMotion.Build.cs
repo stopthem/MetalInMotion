@@ -8,11 +8,9 @@ public class MetalInMotion : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "InputCore" });
+		PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "InputCore", "FCTween" });
 
-		PrivateDependencyModuleNames.AddRange(new string[] { });
-
-		PublicDependencyModuleNames.AddRange(new[] { "FCTween" });
+		PrivateDependencyModuleNames.AddRange(new[] { "EnhancedInput" });
 
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

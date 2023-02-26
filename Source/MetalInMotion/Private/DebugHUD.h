@@ -58,13 +58,13 @@ protected:
 
 private:
 	// Convert a TCHAR pointer to FText.
-	FText CStringToText(const TCHAR* text)
+	FText CStringToText(const TCHAR* text) const
 	{
 		return FText::FromString(text);
 	}
 
 	// Convert a bool to FText.
-	FText BoolToText(bool value)
+	FText BoolToText(bool value) const
 	{
 		return CStringToText(value ? TEXT("true") : TEXT("false"));
 	}
