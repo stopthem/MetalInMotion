@@ -42,13 +42,16 @@ void AMetalInMotionGameModeBase::CheckBallBearingGoals()
 
 	if (BallBearingGoals.IsEmpty())return;
 
-	if (BallBearingGoals.FindByPredicate([](const ABallBearingGoal* BallBearingGoal)
-		{
-			return !BallBearingGoal->HasBallBearing();
-		})
-	)
+	auto allGoalsHasBallBearingGoal = true;
+	for (const auto ballBearingGoal : BallBearingGoals)
 	{
-		GameFinishedTimer.Invalidate();
+		allGoalsHasBallBearingGoal = !ballBearingGoal->HasBallBearing() ? false : allGoalsHasBallBearingGoal;
+	}
+
+	if (!allGoalsHasBallBearingGoal)
+	{
+		if (GameFinishedTimer.IsValid())GameFinishedTimer.Invalidate();
+
 		return;
 	}
 

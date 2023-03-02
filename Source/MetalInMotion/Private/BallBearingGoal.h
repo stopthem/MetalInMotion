@@ -22,15 +22,19 @@ public:
 	ABallBearingGoal();
 
 	// Power of the magnetism.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearingGoal)
 	float Magnetism = 7500.0f;
 
 	// Does this goal have a ball bearing resting in its center?
 	bool HasBallBearing() const;
 
-	// overlapped ball bearing distance needs to be less than this to has ball bearing
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
+	// Overlapped ball bearing distance needs to be less than this to has ball bearing
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearingGoal)
 	float MaxDistanceToHasBallBearing = 75.0f;
+
+	// Overlapped ball bearing velocity size needs to be less than this value to has ball bearing
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearingGoal)
+	float LessThanVelSizeToHasBallBearing = 100.0f;
 
 	// Normal fire vfx, plays when goal doesnt have ball bearing
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="BallBearing|FireVfx")

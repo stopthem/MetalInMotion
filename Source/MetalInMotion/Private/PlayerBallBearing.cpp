@@ -6,7 +6,7 @@
 #include "InputActionValue.h"
 #include "Helpers/InterpolationLibrary.h"
 #include "Kismet/GameplayStatics.h"
-#include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/KismetMathLibrary.h"
 
 /**
  * @brief
@@ -21,17 +21,29 @@ APlayerBallBearing::APlayerBallBearing()
 void APlayerBallBearing::Move(const FInputActionValue& InputActionValue)
 {
 	InputVector = InputActionValue.Get<FVector>();
-	BallMesh->AddForce(InputVector * ControllerForce * BallMesh->GetMass());
+	BallMesh->AddForce(InputVector * ControllerForce * 100.0f * BallMesh->GetMass());
+
+	if (CurrentPlayerBallBearingState == InAir)
+	{
+		// Changing incoming input vector to left handed rotation direction
+		const auto changedInputVectorToRotationBasedDirection = FVector(-InputVector.Y, InputVector.X, 0);
+
+		// Change ball mesh angular velocity towards wanted angular velocity over time
+		BallMesh->SetPhysicsAngularVelocityInDegrees(UKismetMathLibrary::VInterpTo(BallMesh->GetPhysicsAngularVelocityInDegrees(), changedInputVectorToRotationBasedDirection * InAirAngularImpulseTowardsInputPower * 100.0f,
+		                                                                           GetWorld()->GetDeltaSeconds(), InAirToAngularVelocitySpeed));
+	}
 }
 
-// Have the ball bearing perform a jump.
+// Have the ball bearing perform a jump. 
 void APlayerBallBearing::Jump()
 {
 	// Only jump if there is a contact which usually the ground.
-	if (!InContact)return;
+	if (!IsGrounded())return;
 
-	// add impulse upwards for jump
-	BallMesh->AddImpulse(FVector(0.0f, 0.0f, JumpForce * 1000.0f));
+	// Zero out upwards velocity so jumping is consistent
+	BallMesh->SetPhysicsLinearVelocity(GetVelocityWithoutZ());
+	// Add impulse upwards for jump
+	BallMesh->AddImpulse(FVector::UpVector * JumpForce * 1000.0f);
 }
 
 // Have the ball bearing perform a dash.
@@ -50,7 +62,7 @@ void APlayerBallBearing::Dash()
 	// if there is no input
 	if (dashDirection.Size() == 0)
 	{
-		auto noInputDashDirection = GetVelocityWithoutUpwards();
+		auto noInputDashDirection = GetVelocityWithoutZ();
 
 		// if ball is barely or not moving in X-Y
 		if (noInputDashDirection.Size() <= 1.0f)
@@ -73,7 +85,7 @@ void APlayerBallBearing::Dash()
 
 	// first zero out angular velocity and add a angular impulse towards the way we are dashing
 	BallMesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
-	BallMesh->AddAngularImpulseInDegrees(FVector(-dashDirection.Y, dashDirection.X, 0.0f) * DashAngularImpulsePower);
+	BallMesh->AddAngularImpulseInDegrees(FVector(-dashDirection.Y, dashDirection.X, 0.0f) * DashAngularImpulsePower * 100000.0f);
 
 	// spawn the dash vfx at actor position
 	DashVfxComponent = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DashVfx, GetActorLocation(), FRotator::ZeroRotator);
@@ -81,7 +93,7 @@ void APlayerBallBearing::Dash()
 	// set a timer for dash duration
 	GetWorldTimerManager().SetTimer(DashTimer, FTimerDelegate::CreateLambda([&]
 	{
-		ChangeBallBearingState(InContact ? Grounded : InAir, true);
+		ChangeBallBearingState(IsGrounded() ? Grounded : InAir, true);
 	}), DashTime, false);
 
 	// set a timer for dash cooldown
@@ -96,9 +108,7 @@ void APlayerBallBearing::Tick(float deltaSeconds)
 {
 	if (CurrentPlayerBallBearingState != Dashing)
 	{
-		BallMesh->AddForce(InputVector * ControllerForce * BallMesh->GetMass());
-
-		if (GetVelocityWithoutUpwards().Size() > GetMaximumSpeed())
+		if (GetVelocityWithoutZ().Size() > GetMaximumSpeed())
 		{
 			const auto oldVelocity = BallMesh->GetComponentVelocity();
 			auto velocity = oldVelocity;
@@ -112,6 +122,26 @@ void APlayerBallBearing::Tick(float deltaSeconds)
 		}
 	}
 
-	if (!InContact)ChangeBallBearingState(InAir);
+	if (!IsGrounded())ChangeBallBearingState(InAir);
 	Super::Tick(deltaSeconds);
+}
+
+// Check if the ball bearing is grounded
+bool APlayerBallBearing::IsGrounded() const
+{
+	// set start and end of the trace
+	const FVector startTrace = GetActorLocation();
+	const FVector endTrace = FVector(startTrace.X, startTrace.Y, startTrace.Z - (GetActorScale().X + SphereTraceGoDistance));
+
+	// ignore this actor when tracing
+	TArray<AActor*> ignoredActors;
+	ignoredActors.Add(TArray<AActor*>::ElementType(this));
+
+	// trace from center of the actor to down
+	FHitResult hit;
+	UKismetSystemLibrary::SphereTraceSingle(GetWorld(), startTrace, endTrace, GetActorScale().X * 50.0f * SphereTraceRadiusMultiplier, SphereTraceTypeQuery, true, ignoredActors, EDrawDebugTrace::None, hit, true);
+	// DrawDebugLine(GetWorld(), startTrace, endTrace, hit.bBlockingHit ? FColor::Blue : FColor::Red, false, 0.1f, 0, 1.0f);
+
+	// return if trace hit something and its a actor
+	return hit.bBlockingHit && IsValid(hit.GetActor());
 }

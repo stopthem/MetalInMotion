@@ -25,6 +25,7 @@ public:
 	// Is the ball bearing attractive to magnets?
 	bool Magnetized = true;
 
+	// Reset location of this ball bearings location to start location
 	UFUNCTION(BlueprintCallable, Category="Ball Bearing")
 	void ResetLocation() const
 	{
@@ -34,33 +35,8 @@ public:
 	}
 
 protected:
-	/**
-	 * @brief Called when game starts or when spawned
-	 */
+	// Called when game starts or when spawned
 	virtual void BeginPlay() override;
-
-	/**
-	 * @brief Control the movement of the ball bearing, called every frame.
-	 * @param DeltaSeconds 
-	 */
-	virtual void Tick(float DeltaSeconds) override;
-
-	/**
-	 * @brief Receive notification of a collision contact and record that we're in contact with something.
-	 */
-	virtual void NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp, bool bSelfMoved,
-	                       FVector HitLocation, FVector HitNormal, FVector NormalImpulse,
-	                       const FHitResult& Hit) override
-	{
-		Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
-
-		InContact = true;
-	}
-	
-	/**
-	 * @brief Is the ball bearing in contact with any other geometry?
-	 */
-	bool InContact = false;
 
 private:
 	/**

@@ -26,17 +26,16 @@ void ABallBearingGoal::PostInitializeComponents()
 
 	GetCollisionComponent()->SetHiddenInGame(true);
 
-// this causes standalone game crash and i dont have even a slightest clue.
+	// this causes standalone game crash and i dont have even a slightest clue.
 #if WITH_EDITORONLY_DATA
 	GetSpriteComponent()->SetHiddenInGame(true);
 #endif
-
-	Cast<AMetalInMotionGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->AddToBallBearingGoals(this);
 }
 
 void ABallBearingGoal::BeginPlay()
 {
 	Super::BeginPlay();
+	Cast<AMetalInMotionGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->AddToBallBearingGoals(this);
 }
 
 
@@ -120,25 +119,18 @@ void ABallBearingGoal::HandleHasBallBearingVfxS(bool hasBallBearing) const
 	// only play the particle if not playing
 	auto PlayPsIfNotPlaying = [](UParticleSystemComponent& particle)
 	{
-		if (particle.GetNumActiveParticles() > 0)
+		if (particle.IsActive())
 		{
 			return;
 		}
 
-		particle.Activate();
+		particle.Activate(true);
 	};
 
-	if (hasBallBearing)
-	{
-		NormalFireVfx->DeactivateImmediate();
-		PlayPsIfNotPlaying(*HasBallBearingFireVfx);
-		HasBallBearingFireVfx->Activate();
-	}
-	else
-	{
-		HasBallBearingFireVfx->DeactivateImmediate();
-		PlayPsIfNotPlaying(*NormalFireVfx);
-	}
+	const auto deActivatedPs = hasBallBearing ? NormalFireVfx : HasBallBearingFireVfx;
+	const auto activatedPs = hasBallBearing ? HasBallBearingFireVfx : NormalFireVfx;
+	deActivatedPs->DeactivateImmediate();
+	PlayPsIfNotPlaying(*activatedPs);
 }
 
 // Does this goal have a ball bearing resting in its center?
@@ -152,7 +144,7 @@ bool ABallBearingGoal::HasBallBearing() const
 		const auto difference = ourLocation - ballBearing->GetActorLocation();
 		const auto distance = difference.Size();
 
-		if (distance < MaxDistanceToHasBallBearing)
+		if (distance < MaxDistanceToHasBallBearing && ballBearing->GetVelocity().Size() <= LessThanVelSizeToHasBallBearing)
 		{
 			hasBallBearing = true;
 		}

@@ -28,7 +28,7 @@ public:
 	// Sets default values for this pawn's properties.
 	APlayerBallBearing();
 
-	// How much force to use to push the ball bearing around.
+	// How much force to use to push the ball bearing around. will be multiplied with 100
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
 	float ControllerForce = 250.0f;
 
@@ -44,19 +44,23 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
 	float JumpForce = 50.0f;
 
-	// How much angular impulse power will be applied towards velocity when ball is not dashing and is in air
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BallBearing)
-	float InAirAngularImpulsePower = 1750.0f;
+	// The angular impulse power towards input that will be applied if ball is in air. will be multiplied with 100
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|In Air")
+	float InAirAngularImpulseTowardsInputPower = 100.0f;
+
+	// The speed of the current angular velocity to wanted in air angular velocity
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|In Air")
+	float InAirToAngularVelocitySpeed = 2.25f;
 
 	// How much force to use to have the ball bearing dash
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|Dash")
 	float DashTime = 0.1f;
 
-	// How much force to use to have the ball bearing dash
+	// How much force to use to have the ball bearing dash. will be multiplied with 100
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|Dash")
 	float DashForce = 150.0f;
 
-	// How much of a angular impulse will be applied when dashed in air
+	// How much of a angular impulse will be applied when dashed in air. will be multiplied with 100.000
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|Dash")
 	float DashAngularImpulsePower = 10000000.0f;
 
@@ -77,6 +81,17 @@ public:
 	// Move the ball bearing with the incoming input value
 	void Move(const FInputActionValue& InputActionValue);
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Sphere Trace For Grounded")
+	TEnumAsByte<ETraceTypeQuery> SphereTraceTypeQuery;
+
+	// Sphere trace a to b distance
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Sphere Trace For Grounded")
+	float SphereTraceGoDistance = 0.1f;
+
+	// This will be multiplied with LocalScale * 50.0f to be used in Sphere Trace Radius
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Sphere Trace For Grounded")
+	float SphereTraceRadiusMultiplier = 0.5f;
+
 protected:
 	// Control the movement of the ball bearing, called every frame.
 	virtual void Tick(float deltaSeconds) override;
@@ -86,7 +101,7 @@ protected:
 	{
 		Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
 
-		ChangeBallBearingState(Grounded);
+		if (IsGrounded())ChangeBallBearingState(Grounded);
 	}
 
 private:
@@ -123,7 +138,7 @@ private:
 	UParticleSystemComponent* DashVfxComponent = nullptr;
 
 	// Get ball mesh velocity without upwards axis
-	FVector GetVelocityWithoutUpwards(bool normalize = false) const
+	FVector GetVelocityWithoutZ(bool normalize = false) const
 	{
 		auto velocity = BallMesh->GetComponentVelocity();
 		velocity.Z = 0;
@@ -135,6 +150,9 @@ private:
 
 		return velocity;
 	}
+
+	// Check if the ball bearing is grounded
+	bool IsGrounded() const;
 
 	friend class ABallBearingHUD;
 };
