@@ -5,7 +5,9 @@
 
 #include "BallBearingGoal.h"
 #include "BallBearingHUD.h"
+#include "BlueprintGameplayTagLibrary.h"
 #include "FCTween.h"
+#include "GameplayTagsManager.h"
 #include "Kismet/GameplayStatics.h"
 
 AMetalInMotionGameModeBase::AMetalInMotionGameModeBase()

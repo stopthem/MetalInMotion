@@ -7,6 +7,7 @@
 #include "Helpers/InterpolationLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Particles/ParticleSystemComponent.h"
 
 /**
  * @brief
@@ -87,8 +88,8 @@ void APlayerBallBearing::Dash()
 	BallMesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 	BallMesh->AddAngularImpulseInDegrees(FVector(-dashDirection.Y, dashDirection.X, 0.0f) * DashAngularImpulsePower * 100000.0f);
 
-	// spawn the dash vfx at actor position
-	DashVfxComponent = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DashVfx, GetActorLocation(), FRotator::ZeroRotator);
+	// play dash vfx
+	DashVfxComponent->ActivateSystem();
 
 	// set a timer for dash duration
 	GetWorldTimerManager().SetTimer(DashTimer, FTimerDelegate::CreateLambda([&]

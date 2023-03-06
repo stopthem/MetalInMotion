@@ -10,7 +10,7 @@ public class MetalInMotion : ModuleRules
 
 		PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "InputCore", "FCTween" });
 
-		PrivateDependencyModuleNames.AddRange(new[] { "EnhancedInput" });
+		PrivateDependencyModuleNames.AddRange(new[] { "EnhancedInput", "GameplayTags" });
 
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

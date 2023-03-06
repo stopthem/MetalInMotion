@@ -68,9 +68,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|Dash")
 	float DashCoolDown = 0.0f;
 
-	// The vfx that plays when dashed
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BallBearing|Dash")
-	UParticleSystem* DashVfx;
+	// The vfx component that plays when dashed
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="BallBearing|Dash")
+	UParticleSystemComponent* DashVfxComponent;
 
 	// Have the ball bearing perform a jump
 	void Jump();
@@ -133,9 +133,6 @@ private:
 	// for critically damped interpolation
 	FVector DashVelocity = FVector::ZeroVector;
 	FVector* DashVelocityPtr = &DashVelocity;
-
-	UPROPERTY(VisibleAnywhere)
-	UParticleSystemComponent* DashVfxComponent = nullptr;
 
 	// Get ball mesh velocity without upwards axis
 	FVector GetVelocityWithoutZ(bool normalize = false) const

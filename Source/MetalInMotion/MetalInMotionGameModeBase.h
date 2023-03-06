@@ -51,8 +51,7 @@ protected:
 
 private:
 	// Array of ball bearing goals.
-	UPROPERTY(Transient)
-	TArray<ABallBearingGoal*> BallBearingGoals;
+	TArray<TObjectPtr<ABallBearingGoal>> BallBearingGoals;
 
 	// Wait after all ball bearings in place
 	FTimerHandle GameFinishedTimer;
