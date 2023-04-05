@@ -11,10 +11,10 @@ Things i changed or added:
 - Movement was not normalized
 - Project was not using enhanced input so i implemented it.
 - Dash was all over the place, it was not consistent, wrong direction and had no polishing whatsoever. I added vfx, angular velocity and made it consistent.
-- Grounded was handled in ball bearing base class with sphagetti code and i moved it to playerballbearing and cleaned it. I changed grounded functionality(sphere trace) and made it consistent.
+- Grounded was handled in ball bearing base class i moved it to playerballbearing. I changed grounded functionality(sphere trace) and made it consistent.
 - Player ball has a desired angular velocity in air based on input. Basically ball turns towards input direction on air.
 - Added bhop.
-- Level end check was handled in every goal, i moved it to game mode and cleaned it.
+- Level end check was handled in every goal, i moved it to game mode.
 - Ball bearing goals has no ball bearing vfx and has ball bearing vfx.
 
 There is flaws of course, like scripts are not correctly foldered, not using TObjPtr<>, sounds can be better, scripts can be more readable, can use much much more polishing.
