@@ -2,7 +2,8 @@
 
 Developed with Unreal Engine 5.1.
 
-A rolling ball demo from https://www.udemy.com/course/pro-unreal-engine-game-coding/.
+A rolling ball demo from https://www.udemy.com/course/pro-unreal-engine-game-coding/. \
+I was unsatisfied with the development and decided to refactor the project.
 
 This is basically my first Unreal project.\
 I mostly tried to learn the engine and c++ without much polishing on the game.
