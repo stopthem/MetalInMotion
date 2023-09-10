@@ -1,6 +1,6 @@
 # MetalInMotion
 
-Developed with Unreal Engine 5.1.
+Developed with Unreal Engine 5.1, but currently 5.2 .
 
 A rolling ball demo from https://www.udemy.com/course/pro-unreal-engine-game-coding/. \
 I was unsatisfied with the development and decided to refactor the project.
