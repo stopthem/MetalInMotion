@@ -13,14 +13,13 @@ void APlayerBallBearingController::BeginPlay()
 	Super::BeginPlay();
 
 	// // Get the local player subsystem
-	const auto Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());
+	const auto enhancedInputSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());
 	// Clear out existing mapping, and add our mapping
-	Subsystem->ClearAllMappings();
-	Subsystem->AddMappingContext(InputMappingContext, 0);
+	enhancedInputSubsystem->ClearAllMappings();
+	enhancedInputSubsystem->AddMappingContext(InputMappingContext, 0);
 
 	// Get the EnhancedInputComponent
 	const auto enhancedInputComponent = Cast<UEnhancedInputComponent>(GetPawn()->InputComponent);
-	// Bind the actions
 
 	// Get player
 	const auto playerBallBearing = Cast<APlayerBallBearing>(GetPawn());

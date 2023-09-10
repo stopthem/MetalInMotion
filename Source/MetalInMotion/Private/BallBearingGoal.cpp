@@ -4,57 +4,60 @@
 #include "BallBearingGoal.h"
 
 #include "PlayerBallBearing.h"
+#include "Algo/AnyOf.h"
 #include "Components/BillboardComponent.h"
-#include "Components/ShapeComponent.h"
 #include "Components/SphereComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetStringLibrary.h"
 #include "MetalInMotion/MetalInMotionGameModeBase.h"
 #include "Particles/ParticleSystemComponent.h"
 
-// Constructor for a goal for ball bearings.
 ABallBearingGoal::ABallBearingGoal()
 {
 	PrimaryActorTick.bCanEverTick = true;
-
-	AActor::SetActorHiddenInGame(false);
 }
 
-// Hide the collision and sprite components in-game
 void ABallBearingGoal::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
-	GetCollisionComponent()->SetHiddenInGame(true);
-
-	// this causes standalone game crash and i dont have even a slightest clue.
-#if WITH_EDITORONLY_DATA
 	GetSpriteComponent()->SetHiddenInGame(true);
-#endif
+
+	GetCollisionComponent()->SetHiddenInGame(true);
 }
 
 void ABallBearingGoal::BeginPlay()
 {
 	Super::BeginPlay();
-	Cast<AMetalInMotionGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->AddToBallBearingGoals(this);
-}
 
+	Cast<AMetalInMotionGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->AddToBallBearingGoals(this);
+
+	HandleHasBallBearingVfX();
+}
 
 void ABallBearingGoal::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	HandleBallMagnetism();
+
+	CheckHasBallBearing();
+}
+
+void ABallBearingGoal::HandleBallMagnetism()
+{
 	const auto ourLocation = GetActorLocation();
 	const auto sphereRadius = Cast<USphereComponent>(GetCollisionComponent())->GetScaledSphereRadius();
 	auto magnetism = Magnetism;
 
 	// If we're cheating then give our goals extra magnetism.
-
 	const auto extraForce = IConsoleManager::Get().FindConsoleVariable(TEXT("MetalInMotion.ExtraMagnetism"));
 	if (extraForce && extraForce->GetInt() != 0)
 	{
 		magnetism *= 4.0f;
 	}
 
+	// Calculate force on every ball bearing in our range and apply it
 	for (const ABallBearing* ballBearing : BallBearings)
 	{
 		const auto difference = ourLocation - ballBearing->GetActorLocation();
@@ -70,7 +73,58 @@ void ABallBearingGoal::Tick(float DeltaSeconds)
 	}
 }
 
-// Add a ball bearing to the list of proximate bearings we're maintaining.
+void ABallBearingGoal::CheckHasBallBearing()
+{
+	const auto ourLocation = GetActorLocation();
+
+	// Does any of the ball bearings in our range meets conditions for has ball bearing ?
+	const auto bTempHasBallBearing = Algo::AnyOf(BallBearings, [&,ourLocation](const ABallBearing* ballBearing)
+	{
+		const auto difference = ourLocation - ballBearing->GetActorLocation();
+		const auto distance = difference.Size();
+
+		if (distance <= MaxDistanceToHasBallBearing && ballBearing->GetVelocity().Size() <= LessThanVelSizeToHasBallBearing)
+		{
+			return true;
+		}
+
+		return false;
+	});
+
+	// If our ball bearing having status is changed
+	if (bHasBallBearing != bTempHasBallBearing)
+	{
+		if (bTempHasBallBearing) // We didn't have before, now we have it
+		{
+			// We have potential, don't do anything
+			// We need this because we don't set has ball bearing true without waiting
+			if (bPotentialHasBallBearing)
+			{
+				return;
+			}
+
+			bPotentialHasBallBearing = true;
+
+			GetWorldTimerManager().SetTimer(ConfirmHasBallBearingTimerHandle, FTimerDelegate::CreateLambda([=]
+			{
+				// We have confirmed that we have a ball bearing
+				bHasBallBearing = true;
+				HandleHasBallBearingVfX();
+			}), TimeToWaitForConfirmHasBallBearing, false);
+		}
+		else // We had it before, now we don't
+		{
+			GetWorldTimerManager().ClearTimer(ConfirmHasBallBearingTimerHandle);
+
+			bHasBallBearing = false;
+
+			bPotentialHasBallBearing = false;
+
+			HandleHasBallBearingVfX();
+		}
+	}
+}
+
 void ABallBearingGoal::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorBeginOverlap(OtherActor);
@@ -85,7 +139,6 @@ void ABallBearingGoal::NotifyActorBeginOverlap(AActor* OtherActor)
 	BallBearings.AddUnique(enteringBallBearing);
 }
 
-// Remove a ball bearing from the list of proximate bearings we're maintaining. 
 void ABallBearingGoal::NotifyActorEndOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorEndOverlap(OtherActor);
@@ -100,10 +153,9 @@ void ABallBearingGoal::NotifyActorEndOverlap(AActor* OtherActor)
 	BallBearings.Remove(exitingBallBearing);
 }
 
-// is the given actor ball bearing and magnetized
 ABallBearing* ABallBearingGoal::IsBallBearingAndMagnetized(AActor* OtherActor) const
 {
-	if (const auto ballBearing = Cast<ABallBearing>(OtherActor); ballBearing && ballBearing->Magnetized && typeid(ballBearing) != typeid(APlayerBallBearing))
+	if (const auto ballBearing = Cast<ABallBearing>(OtherActor); ballBearing && ballBearing->Magnetized && !ballBearing->IsPlayerControlled())
 	{
 		return ballBearing;
 	}
@@ -111,45 +163,11 @@ ABallBearing* ABallBearingGoal::IsBallBearingAndMagnetized(AActor* OtherActor) c
 	return nullptr;
 }
 
-// If has ball bearing, activate blueish fire if not activate normal.
-void ABallBearingGoal::HandleHasBallBearingVfxS(bool hasBallBearing) const
+void ABallBearingGoal::HandleHasBallBearingVfX() const
 {
-	if (!NormalFireVfx || !HasBallBearingFireVfx)return;
+	const auto deActivatedPs = bHasBallBearing ? NormalFireVfx : HasBallBearingFireVfx;
+	deActivatedPs->Deactivate();
 
-	// only play the particle if not playing
-	auto PlayPsIfNotPlaying = [](UParticleSystemComponent& particle)
-	{
-		if (particle.IsActive())
-		{
-			return;
-		}
-
-		particle.Activate(true);
-	};
-
-	const auto deActivatedPs = hasBallBearing ? NormalFireVfx : HasBallBearingFireVfx;
-	const auto activatedPs = hasBallBearing ? HasBallBearingFireVfx : NormalFireVfx;
-	deActivatedPs->DeactivateImmediate();
-	PlayPsIfNotPlaying(*activatedPs);
-}
-
-// Does this goal have a ball bearing resting in its center?
-bool ABallBearingGoal::HasBallBearing() const
-{
-	auto hasBallBearing = false;
-
-	const auto ourLocation = GetActorLocation();
-	for (const auto ballBearing : BallBearings)
-	{
-		const auto difference = ourLocation - ballBearing->GetActorLocation();
-		const auto distance = difference.Size();
-
-		if (distance < MaxDistanceToHasBallBearing && ballBearing->GetVelocity().Size() <= LessThanVelSizeToHasBallBearing)
-		{
-			hasBallBearing = true;
-		}
-	}
-
-	HandleHasBallBearingVfxS(hasBallBearing);
-	return hasBallBearing;
+	const auto activatedPs = bHasBallBearing ? HasBallBearingFireVfx : NormalFireVfx;
+	activatedPs->Activate(true);
 }

@@ -4,21 +4,16 @@
 #include "PlayerBallBearing.h"
 #include "BallBearing.h"
 #include "InputActionValue.h"
-#include "Helpers/InterpolationLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "MetalInMotion/BlueprintFunctionLibraries/Public/InterpolationLibrary.h"
 #include "Particles/ParticleSystemComponent.h"
 
-/**
- * @brief
- * Create a spring-arm and a camera for this ball bearing on object construction.
- */
 APlayerBallBearing::APlayerBallBearing()
 {
 	Magnetized = false;
 }
 
-// Move the ball bearing with the incoming input value
 void APlayerBallBearing::Move(const FInputActionValue& InputActionValue)
 {
 	InputVector = InputActionValue.Get<FVector>();
@@ -29,13 +24,18 @@ void APlayerBallBearing::Move(const FInputActionValue& InputActionValue)
 		// Changing incoming input vector to left handed rotation direction
 		const auto changedInputVectorToRotationBasedDirection = FVector(-InputVector.Y, InputVector.X, 0);
 
+		// We don't want to instantly change our angular velocity, it looks bad
+		const auto interpedAngularVelInDeg = UKismetMathLibrary::VInterpTo(
+			BallMesh->GetPhysicsAngularVelocityInDegrees(),
+			changedInputVectorToRotationBasedDirection * InAirAngularImpulseTowardsInputPower * 100.0f,
+			GetWorld()->GetDeltaSeconds(),
+			InAirToAngularVelocitySpeed);
+
 		// Change ball mesh angular velocity towards wanted angular velocity over time
-		BallMesh->SetPhysicsAngularVelocityInDegrees(UKismetMathLibrary::VInterpTo(BallMesh->GetPhysicsAngularVelocityInDegrees(), changedInputVectorToRotationBasedDirection * InAirAngularImpulseTowardsInputPower * 100.0f,
-		                                                                           GetWorld()->GetDeltaSeconds(), InAirToAngularVelocitySpeed));
+		BallMesh->SetPhysicsAngularVelocityInDegrees(interpedAngularVelInDeg);
 	}
 }
 
-// Have the ball bearing perform a jump. 
 void APlayerBallBearing::Jump()
 {
 	// Only jump if there is a contact which usually the ground.
@@ -47,7 +47,6 @@ void APlayerBallBearing::Jump()
 	BallMesh->AddImpulse(FVector::UpVector * JumpForce * 1000.0f);
 }
 
-// Have the ball bearing perform a dash.
 void APlayerBallBearing::Dash()
 {
 	// only dash if not dashing
@@ -104,7 +103,6 @@ void APlayerBallBearing::Dash()
 	}), DashCoolDown, false);
 }
 
-// Control the movement of the ball bearing, called every frame.
 void APlayerBallBearing::Tick(float deltaSeconds)
 {
 	if (CurrentPlayerBallBearingState != Dashing)
@@ -123,11 +121,11 @@ void APlayerBallBearing::Tick(float deltaSeconds)
 		}
 	}
 
-	if (!IsGrounded())ChangeBallBearingState(InAir);
+	if (!IsGrounded()) ChangeBallBearingState(InAir);
+
 	Super::Tick(deltaSeconds);
 }
 
-// Check if the ball bearing is grounded
 bool APlayerBallBearing::IsGrounded() const
 {
 	// set start and end of the trace

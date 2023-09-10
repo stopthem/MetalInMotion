@@ -8,6 +8,8 @@
 #include "BlueprintGameplayTagLibrary.h"
 #include "FCTween.h"
 #include "GameplayTagsManager.h"
+#include "Algo/AllOf.h"
+#include "Algo/AnyOf.h"
 #include "Kismet/GameplayStatics.h"
 
 AMetalInMotionGameModeBase::AMetalInMotionGameModeBase()
@@ -40,20 +42,25 @@ void AMetalInMotionGameModeBase::BeginDestroy()
 
 void AMetalInMotionGameModeBase::CheckBallBearingGoals()
 {
-	if (GameFinishedTimer.IsValid())return;
+	if (BallBearingGoals.IsEmpty()) return;
 
-	if (BallBearingGoals.IsEmpty())return;
-
-	auto allGoalsHasBallBearingGoal = true;
-	for (const auto ballBearingGoal : BallBearingGoals)
+	// Does all ball bearing goals have a ball bearing ?
+	const auto allGoalsHasBallBearingGoal = Algo::AllOf(BallBearingGoals, [](const ABallBearingGoal* BallBearingGoal)
 	{
-		allGoalsHasBallBearingGoal = !ballBearingGoal->HasBallBearing() ? false : allGoalsHasBallBearingGoal;
+		return BallBearingGoal->HasBallBearing();
+	});
+
+	// If all ball bearing goals don't have ball bearing and we are counting for game finish 
+	if (!allGoalsHasBallBearingGoal && GameFinishedTimer.IsValid())
+	{
+		GetWorldTimerManager().ClearTimer(GameFinishedTimer);
+
+		return;
 	}
 
-	if (!allGoalsHasBallBearingGoal)
+	// We already have a timer
+	if (GameFinishedTimer.IsValid())
 	{
-		if (GameFinishedTimer.IsValid())GameFinishedTimer.Invalidate();
-
 		return;
 	}
 
